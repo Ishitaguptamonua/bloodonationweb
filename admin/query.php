@@ -1,5 +1,13 @@
-<html>
+<?php
+session_start(); // Start the session
 
+include 'conn.php';
+include 'session.php';
+
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) 
+?>
+<!DOCTYPE html>
+<html lang="en">
 <head>
 
   <meta charset="utf-8">
@@ -9,16 +17,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
 
-<style>
+  <style>
+    #sidebar {
+      position: relative;
+      margin-top: -20px;
+    }
 
-#sidebar{position:relative;margin-top:-20px}
-#content{position:relative;margin-left:210px}
-@media screen and (max-width: 600px) {
-  #content {
-    position:relative;margin-left:auto;margin-right:auto;
-  }
-}
-  #he{
+    #content {
+      position: relative;
+      margin-left: 210px;
+    }
+
+    @media screen and (max-width: 600px) {
+      #content {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+
+    #he {
       font-size: 14px;
       font-weight: 600;
       text-transform: uppercase;
@@ -26,163 +43,142 @@
       color: #fff;
       text-decoration: none;
       border-radius: 3px;
-      align:center
-  }
-</style>
+      text-align: center;
+    }
+
+    .table th, .table td {
+      text-align: center;
+    }
+
+    .pagination {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+    }
+  </style>
 </head>
-<?php
-include 'conn.php';
-  include 'session.php';
-  if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
-  ?>
+
 <body style="color:black">
-<div id="header">
-<?php include 'header.php';
-?>
-</div>
-<div id="sidebar">
-<?php $active="query"; include 'sidebar.php'; ?>
+  <div id="header">
+    <?php include 'header.php'; ?>
+  </div>
 
-</div>
-<div id="content" >
-  <div class="content-wrapper">
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-12 lg-12 sm-12">
+  <div id="sidebar">
+    <?php $active = "query"; include 'sidebar.php'; ?>
+  </div>
 
-          <h1 class="page-title">User Query</h1>
-
+  <div id="content">
+    <div class="content-wrapper">
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-md-12 lg-12 sm-12">
+            <h1 class="page-title">User Query</h1>
+          </div>
         </div>
+        <hr>
 
-      </div>
-      <hr>
-      <script>
-      function clickme(){
-        if(confirm("Do you really Want to Read ?"))
-        {
-            document.getElementById("demo").innerHTML = "Read";
-            <?php
-            echo '<div class="alert alert-info alert_dismissible"><b><button type="button" class="close" data-dismiss="alert">&times;</button></b><b>Pending Request "Read".</b></div>';
-
-            $que_id = $_GET['id'];
-             $sql1="update contact_query set query_status='1' where  query_id={$que_id}";
-              $result=mysqli_query($conn,$sql1);
-            ?>
-        }
-      }
-
-      </script>
-
-
-
-      <?php
+        <?php
         include 'conn.php';
 
-          $limit = 10;
-          if(isset($_GET['page'])){
-            $page = $_GET['page'];
-          }else{
-            $page = 1;
-          }
-          $offset = ($page - 1) * $limit;
-          $count=$offset+1;
-        $sql= "select * from contact_query LIMIT {$offset},{$limit}";
-        $result=mysqli_query($conn,$sql);
-        if(mysqli_num_rows($result)>0)   {
-       ?>
+        // Pagination setup
+        $limit = 10;
+        $page = isset($_GET['page']) ? $_GET['page'] : 1;
+        $offset = ($page - 1) * $limit;
+        $count = $offset + 1;
 
-       <div class="table-responsive">
-      <table class="table table-bordered" style="text-align:center">
-          <thead style="text-align:center">
-          <th style="text-align:center">S.no</th>
-          <th style="text-align:center">Name</th>
-          <th style="text-align:center">Email Id</th>
-          <th style="text-align:center">Mobile Number</th>
-          <th style="text-align:center">Message</th>
-          <th style="text-align:center">Posting Date</th>
-          <th style="text-align:center">Status</th>
-          <th style="text-align:center">Action</th>
-          </thead>
-          <tbody>
+        $sql = "SELECT * FROM contact_query LIMIT {$offset}, {$limit}";
+        $result = mysqli_query($conn, $sql);
+
+        if (mysqli_num_rows($result) > 0) {
+        ?>
+
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>S.No</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Mobile Number</th>
+                  <th>Message</th>
+                  <th>Posting Date</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                while ($row = mysqli_fetch_assoc($result)) { ?>
+                  <tr>
+                    <td><?php echo $count++; ?></td>
+                    <td><?php echo $row['query_name']; ?></td>
+                    <td><?php echo $row['query_mail']; ?></td>
+                    <td><?php echo $row['query_number']; ?></td>
+                    <td><?php echo $row['query_message']; ?></td>
+                    <td><?php echo $row['query_date']; ?></td>
+                    <td>
+                      <?php if ($row['query_status'] == 1) { ?>
+                        <span class="label label-success">Read</span>
+                      <?php } else { ?>
+                        <a href="update_status.php?id=<?php echo $row['query_id']; ?>" 
+                           class="btn btn-warning btn-sm"
+                           onclick="return confirm('Mark this query as read?')">Mark as Read</a>
+                      <?php } ?>
+                    </td>
+                    <td id="he">
+                      <a href="delete_query.php?id=<?php echo $row['query_id']; ?>" 
+                         class="btn btn-danger btn-sm"
+                         onclick="return confirm('Are you sure you want to delete this query?')">Delete</a>
+                    </td>
+                  </tr>
+                <?php } ?>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination">
             <?php
-            while($row = mysqli_fetch_assoc($result)) { ?>
-          <tr>
+            $sql1 = "SELECT COUNT(*) AS total FROM contact_query";
+            $result1 = mysqli_query($conn, $sql1);
+            $row1 = mysqli_fetch_assoc($result1);
+            $total_records = $row1['total'];
+            $total_pages = ceil($total_records / $limit);
 
-                  <td><?php echo $count++; ?></td>
-                  <td><?php echo $row['query_name']; ?></td>
-                  <td><?php echo $row['query_mail']; ?></td>
-                  <td><?php echo $row['query_number']; ?></td>
-                  <td><?php echo $row['query_message']; ?></td>
-                  <td><?php echo $row['query_date']; ?></td>
-                  <?php if($row['query_status']==1)
-{
-?><td>Read<br></td>
-<?php } else {?>
-
-<td><a href="query.php?id=<?php echo $row['query_id'];?>" onclick="clickme()"><b id="demo">Pending</b></a><br>
-
-
-</td>
-<?php } ?>
-                    <td id="he" style="width:100px">
-                    <a style="background-color:aqua" href='delete_query.php?id=<?php echo $row['query_id']; ?>'> Delete </a>
-                </td>
-              </tr>
-            <?php } ?>
-          </tbody>
-      </table>
-    </div>
-    <?php } ?>
-
-    <div class="table-responsive"style="text-align:center;align:center">
-        <?php
-        $sql1 = "SELECT * FROM contact_query";
-        $result1 = mysqli_query($conn, $sql1) or die("Query Failed.");
-
-        if(mysqli_num_rows($result1) > 0){
-
-          $total_records = mysqli_num_rows($result1);
-
-          $total_page = ceil($total_records / $limit);
-
-          echo '<ul class="pagination admin-pagination">';
-          if($page > 1){
-            echo '<li><a href="query.php?page='.($page - 1).'">Prev</a></li>';
-          }
-          for($i = 1; $i <= $total_page; $i++){
-            if($i == $page){
-              $active = "active";
-            }else{
-              $active = "";
+            if ($page > 1) {
+              echo '<a href="?page=' . ($page - 1) . '" class="btn btn-default">Prev</a>';
             }
-            echo '<li class="'.$active.'"><a href="query.php?page='.$i.'">'.$i.'</a></li>';
-          }
-          if($total_page > $page){
-            echo '<li><a href="query.php.php?page='.($page + 1).'">Next</a></li>';
-          }
+            for ($i = 1; $i <= $total_pages; $i++) {
+              $active = ($i == $page) ? 'btn-primary' : 'btn-default';
+              echo '<a href="?page=' . $i . '" class="btn ' . $active . '">' . $i . '</a>';
+            }
+            if ($page < $total_pages) {
+              echo '<a href="?page=' . ($page + 1) . '" class="btn btn-default">Next</a>';
+            }
+            ?>
+          </div>
 
-          echo '</ul>';
+        <?php
+        } else {
+          echo '<div class="alert alert-warning text-center">No records found.</div>';
         }
         ?>
 
-        </div>
       </div>
     </div>
+  </div>
 
-    <?php
-   } else {
-       echo '<div class="alert alert-danger"><b> Please Login First To Access Admin Portal.</b></div>';
-       ?>
-       <form method="post" name="" action="login.php" class="form-horizontal">
-         <div class="form-group">
-           <div class="col-sm-8 col-sm-offset-4" style="float:left">
-
-             <button class="btn btn-primary" name="submit" type="submit">Go to Login Page</button>
-           </div>
-         </div>
-       </form>
-   <?php }
-    ?>
-
+  <?php
+  if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] != true) {
+    echo '<div class="alert alert-danger"><b>Please Login First To Access Admin Portal.</b></div>';
+    echo '<form method="post" action="login.php" class="form-horizontal">';
+    echo '<div class="form-group">';
+    echo '<div class="col-sm-8 col-sm-offset-4">';
+    echo '<button class="btn btn-primary" type="submit">Go to Login Page</button>';
+    echo '</div>';
+    echo '</div>';
+    echo '</form>';
+  }
+  ?>
 </body>
 </html>
